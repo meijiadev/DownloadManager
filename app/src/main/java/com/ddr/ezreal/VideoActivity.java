@@ -20,9 +20,6 @@ import java.util.List;
 import androidx.appcompat.app.ActionBar;
 import butterknife.BindView;
 
-import static com.shuyu.gsyvideoplayer.utils.GSYVideoType.SCREEN_MATCH_FULL;
-
-
 public class VideoActivity extends BaseActivity {
     @BindView(R.id.videoPlayer)
     GSYSampleADVideoPlayer videoPlayer;
@@ -47,7 +44,7 @@ public class VideoActivity extends BaseActivity {
         Intent intent=getIntent();
         videoModels= Collections.unmodifiableList(intent.getParcelableArrayListExtra("videoUrl"));
         int index=intent.getIntExtra("videoPosition",0);
-        videoPlayer.setUp(videoModels,true,index);
+        videoPlayer.setUp(videoModels,true,index,GlobalParameter.getDownloadFile());
         //设置返回键
         videoPlayer.getBackButton().setVisibility(View.VISIBLE);
         //设置旋转
@@ -102,7 +99,7 @@ public class VideoActivity extends BaseActivity {
     @Override
     protected void onStop() {
         super.onStop();
-        //从前台切到后台，当视频正在播放或者正在缓冲时，调用该方法暂停视频
+
 
     }
 
@@ -129,7 +126,6 @@ public class VideoActivity extends BaseActivity {
     @Override
     protected void onRestart() {
         super.onRestart();
-        //从后台切换到前台，当视频暂停时或者缓冲暂停时，调用该方法重新开启视频播放
 
     }
 }

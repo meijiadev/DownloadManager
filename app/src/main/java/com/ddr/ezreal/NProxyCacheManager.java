@@ -8,6 +8,7 @@ import com.danikula.videocache.CacheListener;
 import com.danikula.videocache.HttpProxyCacheServer;
 import com.danikula.videocache.file.FileNameGenerator;
 import com.danikula.videocache.file.Md5FileNameGenerator;
+import com.ddr.ezreal.gsyvideoplayer.MyFileNameGenerator;
 import com.shuyu.gsyvideoplayer.cache.ICacheManager;
 import com.shuyu.gsyvideoplayer.cache.ProxyCacheManager;
 import com.shuyu.gsyvideoplayer.cache.ProxyCacheUserAgentHeadersInjector;
@@ -22,7 +23,7 @@ import java.util.Map;
 import tv.danmaku.ijk.media.player.IMediaPlayer;
 
 public class NProxyCacheManager implements ICacheManager, CacheListener {
-    public static int DEFAULT_MAX_SIZE = 512 * 1024 * 1024;
+    public static int DEFAULT_MAX_SIZE = 1024* 1024 * 1024;
 
     //视频代理
     protected HttpProxyCacheServer proxy;
@@ -40,6 +41,8 @@ public class NProxyCacheManager implements ICacheManager, CacheListener {
 
     protected ProxyCacheUserAgentHeadersInjector userAgentHeadersInjector = new ProxyCacheUserAgentHeadersInjector();
 
+    private int cacheProgress=0;
+
     /**
      * 单例管理器
      */
@@ -52,9 +55,12 @@ public class NProxyCacheManager implements ICacheManager, CacheListener {
     @Override
     public void onCacheAvailable(File cacheFile, String url, int percentsAvailable) {
         if (cacheAvailableListener != null) {
+            //Logger.e("------缓冲比例："+percentsAvailable);
             cacheAvailableListener.onCacheAvailable(cacheFile, url, percentsAvailable);
         }
     }
+
+
 
     @Override
     public void doCacheLogic(Context context, IMediaPlayer mediaPlayer, String originUrl, Map<String, String> header, File cachePath) {
@@ -65,6 +71,35 @@ public class NProxyCacheManager implements ICacheManager, CacheListener {
         }
         if (url.startsWith("http") && !url.contains("127.0.0.1") && !url.contains(".m3u8")) {
             HttpProxyCacheServer proxy = getProxy(context.getApplicationContext(), cachePath);
+            if (proxy != null) {
+                //此处转换了url，然后再赋值给mUrl。
+                Logger.e("----------转换之后的url:"+url);
+                url = proxy.getProxyUrl(url);
+                mCacheFile = (!url.startsWith("http"));
+                //注册上缓冲监听
+                if (!mCacheFile) {
+                    proxy.registerCacheListener(this, originUrl);
+                }
+            }
+        } else if ((!url.startsWith("http") && !url.startsWith("rtmp")
+                && !url.startsWith("rtsp") && !url.contains(".m3u8"))) {
+            mCacheFile = true;
+        }
+        try {
+            mediaPlayer.setDataSource(context, Uri.parse(url), header);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void doCacheVideo(IMediaPlayer mediaPlayer,String originUrl,Map<String, String> header){
+        String url = originUrl;
+        userAgentHeadersInjector.mMapHeadData.clear();
+        if (header != null) {
+            userAgentHeadersInjector.mMapHeadData.putAll(header);
+        }
+        if (url.startsWith("http") && !url.contains("127.0.0.1") && !url.contains(".m3u8")) {
+            HttpProxyCacheServer proxy = getProxy(BaseApplication.getContext(), GlobalParameter.getDownloadFile());
             if (proxy != null) {
                 //此处转换了url，然后再赋值给mUrl。
                 url = proxy.getProxyUrl(url);
@@ -79,7 +114,7 @@ public class NProxyCacheManager implements ICacheManager, CacheListener {
             mCacheFile = true;
         }
         try {
-            mediaPlayer.setDataSource(context, Uri.parse(url), header);
+            mediaPlayer.setDataSource(BaseApplication.getContext(), Uri.parse(url), header);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -157,6 +192,7 @@ public class NProxyCacheManager implements ICacheManager, CacheListener {
         builder.cacheDirectory(file);
         builder.maxCacheSize(DEFAULT_MAX_SIZE);
         builder.headerInjector(userAgentHeadersInjector);
+        builder.fileNameGenerator(new MyFileNameGenerator());
         if (fileNameGenerator != null) {
             builder.fileNameGenerator(fileNameGenerator);
         }

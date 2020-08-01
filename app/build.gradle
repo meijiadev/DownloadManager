@@ -54,4 +54,7 @@ dependencies {
     implementation 'io.reactivex.rxjava2:rxjava:2.1.8' //rxjava
     implementation 'io.reactivex.rxjava2:rxandroid:2.0.1'
     implementation 'androidx.recyclerview:recyclerview:1.0.0'//rxandroid 线程调度
+
+    // 权限请求框架：https://github.com/getActivity/XXPermissions
+    implementation 'com.hjq:xxpermissions:6.0'
 }
